@@ -1,56 +1,129 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
+import { Image, StyleSheet, Platform, View, TouchableOpacity, Text, Button, ScrollView } from 'react-native';
+import React from 'react';
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import productsDB from '@/fake_data/products';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function HomeScreen() {
+
+  const [permission, requestPermission] = useCameraPermissions();
+
+  const [products, setProducts] = useState<{id: Number, title: string, imageUrl: string, type: string}[]>([]);
+
+  const [selectedProduct, setSelectedProduct] = useState<{id: Number, title: string, imageUrl: string, type: string} | null>(null)
+
+  useEffect(() => {
+    setProducts(productsDB);
+  }, [])
+
+  if (!permission) {
+    // Camera permissions are still loading.
+    return <View style={{backgroundColor: "#ffffff"}}>
+      <Text>Loading</Text>
+    </View>;
+  }
+
+  if (!permission.granted) {
+    // Camera permissions are not granted yet.
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>Aceita a permissão, cuzão.</Text>
+        <Button onPress={requestPermission} title="grant permission" />
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <CameraView style={styles.camera} facing="front">
+          <SafeAreaView style={{flex: 1}}>
+            {
+              !selectedProduct && (
+                <>
+                  <View style={{
+                  backgroundColor: '#88888888',
+                  height: 80,
+                  padding: 12
+                }}><Text style={{
+                  color: "#ffffff",
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                }}>Oii seu lindo!</Text>
+                  <Text style={{
+                  color: "#ffffff",
+                  fontSize: 20,
+                  textAlign: 'center',
+                }}>Compre nossos produtos.</Text>
+                </View>
+                <View style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                }}>
+
+                  <ScrollView horizontal style={{
+                    marginTop: 20
+                  }}>
+                    {
+                      products.map(product => (
+                        <TouchableOpacity key={String(product.id)} style={{
+                          backgroundColor: '#ffffff',
+                          height: 140,
+                          width: 130,
+                          marginLeft: 20,
+                          alignItems: 'center',
+                          borderRadius: 4
+                        }}
+                          onPress={() => setSelectedProduct(product)}
+                        >
+                        <Image source={{uri: product.imageUrl}} height={80} width={80} style={{resizeMode: 'contain'}} />
+                          <Text>{product.title}</Text>
+                          </TouchableOpacity>
+
+                      ))
+                    }
+                  </ScrollView>
+                </View>
+                </>
+              )
+            }
+            
+
+                {
+                  selectedProduct && (
+                    <View style={[{
+                      position: 'absolute',
+                      left: 40,
+                      marginTop: 'auto',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                    }, selectedProduct.type === "touca"? {top: 40, flexDirection: 'column-reverse'}: {bottom: 40,}]}>
+                      <Image source={{uri: selectedProduct.imageUrl}} height={300} width={300} style={{
+                        resizeMode: 'contain'
+                      }} />
+                      <TouchableOpacity onPress={() => setSelectedProduct(null)} style={{
+                        flexDirection: 'row',
+                        backgroundColor: 'white',
+                        padding: 8,
+                        borderRadius: 4,
+                      }}>
+                        <MaterialCommunityIcons name="close" size={24} color="red" />
+                        <Text style={{color: 'red'}}>Fechar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )
+                }
+
+          </SafeAreaView>
+        </CameraView>
+    
+
   );
 }
 
@@ -71,4 +144,32 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
   },
-});
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  message: {
+    textAlign: 'center',
+    paddingBottom: 10,
+  },
+  camera: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    margin: 64,
+  },
+  button: {
+    flex: 1,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+},
+);
